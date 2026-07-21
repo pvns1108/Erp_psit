@@ -1,0 +1,10 @@
+node_modules/
+.env
+backend/uploads/photos/*
+backend/uploads/resumes/*
+backend/uploads/certificates/*
+!backend/uploads/photos/.gitkeep
+!backend/uploads/resumes/.gitkeep
+!backend/uploads/certificates/.gitkeep
+*.log
+.DS_Store

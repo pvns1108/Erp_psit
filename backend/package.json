@@ -1,0 +1,31 @@
+{
+  "name": "psit-erp-backend",
+  "version": "1.0.0",
+  "description": "PSIT Kanpur Digital Campus ERP - full backend (Express + MongoDB)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
+    "express-rate-limit": "^7.2.0",
+    "express-validator": "^7.1.0",
+    "helmet": "^7.1.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nanoid": "^3.3.7",
+    "pdfkit": "^0.15.0",
+    "ua-parser-js": "^1.0.38"
+  }
+}
