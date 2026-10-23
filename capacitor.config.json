@@ -3,7 +3,7 @@
   "appName": "PSIT ERP",
   "webDir": "public",
   "server": {
-    "url": "https://erp-psit.onrender.com",
+    "url": "https://erp-psit-7x0d.onrender.com",
     "cleartext": false
   }
 }

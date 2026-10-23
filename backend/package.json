@@ -29,6 +29,6 @@
     "ua-parser-js": "^1.0.38"
   },
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   }
 }
