@@ -12,7 +12,7 @@ const studentLogin = asyncHandler(async (req, res) => {
     res.status(400); throw new Error('Student ID/email and password are required');
   }
   const student = await Student.findOne({
-    $or: [{ studentId: identifier }, { email: identifier.toLowerCase() }, { rollNumber: identifier }, { registrationNumber: identifier }]
+    $or: [{ studentId: identifier }, { email: String(identifier).toLowerCase() }, { rollNumber: identifier }, { registrationNumber: identifier }]
   });
   if (!student) { res.status(401); throw new Error('Invalid credentials'); }
   if (student.status === 'suspended') { res.status(403); throw new Error('This account has been suspended. Contact administration.'); }
@@ -42,7 +42,7 @@ const studentLogin = asyncHandler(async (req, res) => {
 const adminLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) { res.status(400); throw new Error('Email and password are required'); }
-  const admin = await Admin.findOne({ email: email.toLowerCase() });
+  const admin = await Admin.findOne({ email: String(email).toLowerCase() });
   if (!admin) { res.status(401); throw new Error('Invalid credentials'); }
   const match = await admin.comparePassword(password);
   if (!match) { res.status(401); throw new Error('Invalid credentials'); }
@@ -80,6 +80,7 @@ const changePassword = asyncHandler(async (req, res) => {
   }
   const Model = req.userModel === 'Admin' ? Admin : Student;
   const user = await Model.findById(req.user._id);
+  if (!currentPassword) { res.status(400); throw new Error('Current password is required'); }
   const match = await user.comparePassword(currentPassword);
   if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
   user.password = newPassword;
@@ -93,10 +94,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const { identifier } = req.body;
   if (!identifier) { res.status(400); throw new Error('Email or Student ID is required'); }
 
-  let user = await Student.findOne({ $or: [{ studentId: identifier }, { email: identifier.toLowerCase() }, { rollNumber: identifier }, { registrationNumber: identifier }] });
+  let user = await Student.findOne({ $or: [{ studentId: identifier }, { email: String(identifier).toLowerCase() }, { rollNumber: identifier }, { registrationNumber: identifier }] });
   let Model = Student;
   if (!user) {
-    user = await Admin.findOne({ email: identifier.toLowerCase() });
+    user = await Admin.findOne({ email: String(identifier).toLowerCase() });
     Model = Admin;
   }
   // Always respond success (don't leak account existence)
@@ -110,6 +111,15 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   // NOTE: no SMTP configured in this demo — the reset link/token is returned directly.
   // In production, email this link via nodemailer/SES/SendGrid instead of returning it.
+  // SECURITY: returning the token lets anyone reset any account (including admin) just by
+  // knowing the email. Only do that in local development, or if explicitly enabled.
+  const exposeToken = process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEV_RESET === 'true';
+  if (!exposeToken) {
+    return res.json({
+      success: true,
+      message: 'Reset request recorded. Please contact the administration office — they can reset your password from the Admin dashboard.'
+    });
+  }
   res.json({
     success: true,
     message: 'Password reset token generated (dev mode — no email service configured).',

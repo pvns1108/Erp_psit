@@ -4,9 +4,13 @@ const { Parser: CsvParser } = require('json2csv');
 const ExcelJS = require('exceljs');
 const Student = require('../models/Student');
 const LoginLog = require('../models/LoginLog');
+const StoredFile = require('../models/StoredFile');
 const { Notice, Assignment, Placement, Notification } = require('../models/Misc');
 const { generateStudentId, generateTempPassword } = require('../utils/helpers');
 const { generateDocumentPdf } = require('../utils/pdfGenerator');
+
+// Escapes user input before it's used inside a RegExp (stops crashes/ReDoS from inputs like "(" or "a+")
+const escapeRegex = str => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // In-memory holder of most-recently-created credentials, for export convenience.
 let recentCredentials = [];
@@ -67,11 +71,11 @@ const listStudents = asyncHandler(async (req, res) => {
   if (status) query.status = status;
   if (search) {
     query.$or = [
-      { name: new RegExp(search, 'i') },
-      { studentId: new RegExp(search, 'i') },
-      { email: new RegExp(search, 'i') },
-      { rollNumber: new RegExp(search, 'i') },
-      { department: new RegExp(search, 'i') }
+      { name: new RegExp(escapeRegex(search), 'i') },
+      { studentId: new RegExp(escapeRegex(search), 'i') },
+      { email: new RegExp(escapeRegex(search), 'i') },
+      { rollNumber: new RegExp(escapeRegex(search), 'i') },
+      { department: new RegExp(escapeRegex(search), 'i') }
     ];
   }
   const pageNum = Math.max(1, Number(page));
@@ -103,6 +107,9 @@ const updateStudent = asyncHandler(async (req, res) => {
 const deleteStudent = asyncHandler(async (req, res) => {
   const student = await Student.findByIdAndDelete(req.params.id);
   if (!student) { res.status(404); throw new Error('Student not found'); }
+  // Clean up the student's uploaded files and notifications so they don't pile up in the free DB tier
+  await StoredFile.deleteMany({ owner: student._id });
+  await Notification.deleteMany({ student: student._id });
   res.json({ success: true, message: 'Student deleted' });
 });
 
@@ -258,7 +265,7 @@ const getLoginHistory = asyncHandler(async (req, res) => {
   const { page = 1, limit = 25, search = '' } = req.query;
   const query = {};
   if (search) {
-    query.$or = [{ name: new RegExp(search, 'i') }, { studentId: new RegExp(search, 'i') }];
+    query.$or = [{ name: new RegExp(escapeRegex(search), 'i') }, { studentId: new RegExp(escapeRegex(search), 'i') }];
   }
   const pageNum = Math.max(1, Number(page));
   const limitNum = Math.min(100, Number(limit));

@@ -1,0 +1,33 @@
+{
+  "name": "psit-erp-app",
+  "version": "1.0.0",
+  "description": "A real, working ERP: Node.js/Express/MongoDB backend + the existing animated frontend, served together as one app. Student accounts, admin dashboard, file uploads, PDF downloads, login tracking, and notifications all run against a real database.",
+  "main": "backend/server.js",
+  "scripts": {
+    "postinstall": "npm install --prefix backend --omit=dev",
+    "start": "node backend/server.js",
+    "seed": "npm run seed --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "cap:sync": "npx cap sync android"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pvns1108/Erp_psit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pvns1108/Erp_psit/issues"
+  },
+  "homepage": "https://github.com/pvns1108/Erp_psit#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

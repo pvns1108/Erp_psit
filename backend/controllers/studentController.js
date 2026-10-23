@@ -1,9 +1,8 @@
 const asyncHandler = require('express-async-handler');
-const fs = require('fs');
-const path = require('path');
 const Student = require('../models/Student');
 const { Notification } = require('../models/Misc');
 const { generateDocumentPdf } = require('../utils/pdfGenerator');
+const { deleteStoredFile, sendStoredFile } = require('../utils/fileStore');
 
 // GET /api/students/me
 const getMe = asyncHandler(async (req, res) => {
@@ -41,10 +40,7 @@ const updateEmail = asyncHandler(async (req, res) => {
 const uploadPhoto = asyncHandler(async (req, res) => {
   if (!req.file) { res.status(400); throw new Error('No photo uploaded'); }
   const student = await Student.findById(req.user._id);
-  if (student.profilePhoto) {
-    const old = path.join(__dirname, '..', student.profilePhoto);
-    fs.unlink(old, () => {});
-  }
+  if (student.profilePhoto) await deleteStoredFile(student.profilePhoto);
   student.profilePhoto = `/uploads/photos/${req.file.filename}`;
   await student.save();
   res.json({ success: true, message: 'Photo uploaded', profilePhoto: student.profilePhoto });
@@ -52,9 +48,7 @@ const uploadPhoto = asyncHandler(async (req, res) => {
 
 const removePhoto = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.user._id);
-  if (student.profilePhoto) {
-    fs.unlink(path.join(__dirname, '..', student.profilePhoto), () => {});
-  }
+  if (student.profilePhoto) await deleteStoredFile(student.profilePhoto);
   student.profilePhoto = '';
   await student.save();
   res.json({ success: true, message: 'Photo removed' });
@@ -64,9 +58,7 @@ const removePhoto = asyncHandler(async (req, res) => {
 const uploadResume = asyncHandler(async (req, res) => {
   if (!req.file) { res.status(400); throw new Error('No resume file uploaded'); }
   const student = await Student.findById(req.user._id);
-  if (student.resume && student.resume.path) {
-    fs.unlink(path.join(__dirname, '..', student.resume.path), () => {});
-  }
+  if (student.resume && student.resume.path) await deleteStoredFile(student.resume.path);
   student.resume = {
     filename: req.file.originalname,
     path: `/uploads/resumes/${req.file.filename}`,
@@ -84,9 +76,7 @@ const uploadResume = asyncHandler(async (req, res) => {
 
 const deleteResume = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.user._id);
-  if (student.resume && student.resume.path) {
-    fs.unlink(path.join(__dirname, '..', student.resume.path), () => {});
-  }
+  if (student.resume && student.resume.path) await deleteStoredFile(student.resume.path);
   student.resume = undefined;
   await student.save();
   res.json({ success: true, message: 'Resume deleted' });
@@ -97,8 +87,7 @@ const downloadResume = asyncHandler(async (req, res) => {
     ? await Student.findOne({ studentId: req.params.studentId })
     : await Student.findById(req.user._id);
   if (!student || !student.resume || !student.resume.path) { res.status(404); throw new Error('No resume on file'); }
-  const filePath = path.join(__dirname, '..', student.resume.path);
-  res.download(filePath, student.resume.filename);
+  await sendStoredFile(res, student.resume.path, { asAttachment: true, downloadName: student.resume.filename });
 });
 
 // --- Certificates ---
@@ -120,7 +109,7 @@ const deleteCertificate = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.user._id);
   const cert = student.certificates.id(req.params.certId);
   if (!cert) { res.status(404); throw new Error('Certificate not found'); }
-  fs.unlink(path.join(__dirname, '..', cert.path), () => {});
+  await deleteStoredFile(cert.path);
   cert.deleteOne();
   await student.save();
   res.json({ success: true, message: 'Certificate deleted', certificates: student.certificates });
@@ -130,7 +119,7 @@ const downloadCertificate = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.user._id);
   const cert = student.certificates.id(req.params.certId);
   if (!cert) { res.status(404); throw new Error('Certificate not found'); }
-  res.download(path.join(__dirname, '..', cert.path), cert.filename);
+  await sendStoredFile(res, cert.path, { asAttachment: true, downloadName: cert.filename });
 });
 
 // --- Notifications ---
@@ -180,8 +169,8 @@ const downloadFeeReceipt = asyncHandler(async (req, res) => {
     title: 'Fee Payment Receipt',
     subtitle: `${student.name} · ${student.studentId}`,
     rows: [
-      ['Fees Paid', `₹${student.feesPaid.toLocaleString('en-IN')}`],
-      ['Fees Due', `₹${student.feesDue.toLocaleString('en-IN')}`],
+      ['Fees Paid', `₹${(student.feesPaid || 0).toLocaleString('en-IN')}`],
+      ['Fees Due', `₹${(student.feesDue || 0).toLocaleString('en-IN')}`],
       ['Academic Year', new Date().getFullYear().toString()]
     ]
   });

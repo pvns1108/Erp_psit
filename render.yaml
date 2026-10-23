@@ -1,0 +1,29 @@
+# Render Blueprint — one-click deploy on Render's free plan.
+# Render dashboard → New → Blueprint → pick this repo. It will ask you for the secret values.
+services:
+  - type: web
+    name: erp-psit            # gives https://erp-psit.onrender.com (matches capacitor.config.json)
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: JWT_SECRET
+        generateValue: true     # Render creates a long random secret for you
+      - key: MONGO_URI
+        sync: false             # you paste your MongoDB Atlas connection string
+      - key: SEED_ADMIN_EMAIL
+        value: admin@psit.ac.in
+      - key: SEED_ADMIN_PASSWORD
+        sync: false             # you choose the first admin's password
+      - key: SEED_ADMIN_NAME
+        value: Super Admin

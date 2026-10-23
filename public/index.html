@@ -976,9 +976,12 @@ async function submitForgotPassword(){
   try{
     const data = await apiFetch('/auth/forgot-password', { method:'POST', body: JSON.stringify({ identifier }) });
     toast(data.message);
-    if(data.devResetToken){
-      document.getElementById('reset-token').value = data.devResetToken;
+    if(!data.devResetToken){
+      // Production: no email service, so the token isn't shown — admin resets the password instead
+      closeForgotPassword();
+      return;
     }
+    document.getElementById('reset-token').value = data.devResetToken;
     document.getElementById('forgot-step-1').style.display = 'none';
     document.getElementById('forgot-step-2').style.display = 'block';
   }catch(err){ toast(err.message, 'fa-triangle-exclamation'); }

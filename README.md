@@ -53,7 +53,7 @@ psit-erp-app/
 │   ├── routes/
 │   ├── middleware/            # auth (JWT), upload (multer), validation, error handling
 │   ├── utils/                 # JWT signing, credential/ID generation, PDF generator
-│   └── uploads/                # photos / resumes / certificates land here
+│   └── utils/fileStore.js     # uploads are stored in MongoDB (survive free-host restarts)
 └── public/
     └── index.html             # the existing animated frontend (unchanged design), now calling the API
 ```
@@ -119,27 +119,41 @@ Your `.env` file is git-ignored on purpose — never commit real secrets.
 
 ---
 
-## 3. Deploy it live (Render + MongoDB Atlas — both free)
+## 3. Deploy it live — 100% free (Render + MongoDB Atlas)
 
-1. Make sure you already have a MongoDB Atlas cluster and connection string (step 1 above).
-   In Atlas, under **Network Access**, add `0.0.0.0/0` so your host can connect.
-2. Go to [render.com](https://render.com), sign up, and click **New → Web Service**.
-3. Connect your GitHub account and pick the repo you just pushed.
-4. Configure:
-   - **Root Directory:** `backend`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-5. Under **Environment**, add the same variables from your `.env`:
-   `MONGO_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `NODE_ENV=production`, `CORS_ORIGIN` (your Render URL once known, or leave as `*` to start).
-6. Click **Create Web Service**. Render builds and deploys automatically.
-7. Once live, run the seed script once against your production database — easiest way:
-   temporarily set your local `.env`'s `MONGO_URI` to the same Atlas URI and run
-   `npm run seed` locally (it connects straight to Atlas, no need to run it on Render).
-8. Your live URL will look like `https://<your-app>.onrender.com` — that's the whole
-   ERP, live and shareable. Every future `git push` to `main` auto-redeploys it.
+**A. Database — MongoDB Atlas (free M0, 512 MB)**
+1. [cloud.mongodb.com](https://cloud.mongodb.com) → create a free **M0** cluster.
+2. **Database Access** → add a user + password.
+3. **Network Access** → add `0.0.0.0/0` (Render's IPs change, so it must allow all).
+4. **Connect → Drivers** → copy the connection string and add the DB name:
+   `mongodb+srv://USER:PASS@cluster0.xxxx.mongodb.net/psit_erp?retryWrites=true&w=majority`
 
-Render's free tier sleeps after inactivity and takes ~30–60 seconds to wake up on
-the first request — normal for free hosting, not a bug.
+**B. Server — Render (free web service)**
+1. Push this folder to GitHub (step 2 above).
+2. [dashboard.render.com](https://dashboard.render.com) → **New → Blueprint** → pick the repo.
+   Render reads `render.yaml` and sets everything up (root dir `backend`, build, start,
+   health check, `NODE_ENV=production`, and a random `JWT_SECRET`).
+3. It asks for two values:
+   - `MONGO_URI` — the Atlas string from step A
+   - `SEED_ADMIN_PASSWORD` — the password you want for the first admin
+4. Click **Apply**. On first start the server **creates the admin account automatically**
+   (`admin@psit.ac.in` + your password) — no shell or seed script needed.
+5. Live at `https://erp-psit.onrender.com` (or whatever name Render gives you — if it differs,
+   update `server.url` in `capacitor.config.json` for the Android app).
+
+Already created the service by hand (Web Service, not Blueprint)? Make sure it has:
+Root Directory `backend` · Build `npm install` · Start `npm start` · Health check `/api/health`
+and env vars `MONGO_URI`, `JWT_SECRET`, `NODE_ENV=production`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`.
+Every `git push` to `main` redeploys automatically.
+
+**Free-tier notes**
+- Render free services sleep after 15 min idle; the first visit takes ~30–60 s to wake.
+  (Optional: a free [UptimeRobot](https://uptimerobot.com) monitor pinging `/api/health`
+  every 10 min keeps it awake.)
+- Uploaded photos/resumes/certificates are stored **in MongoDB**, not on disk, because
+  Render's free disk is wiped on every restart. Atlas free = 512 MB total, so keep uploads small.
+- In production, "Forgot password" no longer reveals a reset token on screen (that let
+  anyone take over any account). Students ask the admin, who resets it from the dashboard.
 
 ---
 

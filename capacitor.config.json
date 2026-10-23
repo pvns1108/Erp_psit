@@ -1,0 +1,9 @@
+{
+  "appId": "com.psit.erp",
+  "appName": "PSIT ERP",
+  "webDir": "public",
+  "server": {
+    "url": "https://erp-psit.onrender.com",
+    "cleartext": false
+  }
+}

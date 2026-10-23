@@ -6,7 +6,9 @@ const adminSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
   role: { type: String, default: 'admin' },
-  lastLogin: Date
+  lastLogin: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date
 }, { timestamps: true });
 
 adminSchema.pre('save', async function (next) {

@@ -8,3 +8,11 @@ backend/uploads/certificates/*
 !backend/uploads/certificates/.gitkeep
 *.log
 .DS_Store
+
+# Android / IDE build output
+android/.gradle/
+android/.idea/
+android/app/build/
+android/build/
+android/local.properties
+backend/node_modules/
