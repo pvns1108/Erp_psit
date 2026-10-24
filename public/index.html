@@ -2255,12 +2255,58 @@ function renderAdminContent(){
           <button class="btn btn-primary btn-sm" type="submit"><i class="fa-solid fa-briefcase"></i> Post Drive</button>
         </form>
       </div>
+    </div>
+    <div class="card glass" style="margin-top:18px;">
+      <div class="section-title">Posted Notices</div>
+      <div id="admin-notice-list"><div class="text-dim" style="font-size:13px;">Loading notices…</div></div>
     </div>`;
+  loadAdminNotices();
+}
+function escHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function loadAdminNotices(){
+  const el = document.getElementById('admin-notice-list');
+  if(!el) return;
+  try{
+    const data = await apiFetch('/notices');
+    const list = data.notices || [];
+    if(!list.length){ el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-bullhorn"></i>No notices posted yet</div>`; return; }
+    el.innerHTML = list.map(n => `
+      <div class="notice-card" id="admin-notice-${n._id}" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);">
+        <span class="notice-cat" style="background:${catColor(n.category)}22;color:${catColor(n.category)};">${escHtml(n.category||'Notice')}</span>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:13.5px;">${escHtml(n.title)}</p>
+          ${n.body ? `<p class="text-dim" style="font-size:12px;margin-top:2px;">${escHtml(n.body)}</p>` : ''}
+          <span class="text-dim" style="font-size:11px;">${new Date(n.createdAt).toLocaleDateString('en-IN')} · ${escHtml(n.targetDepartment||'All')}</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-confirm="0" onclick="deleteAdminNotice('${n._id}', this)"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>`).join('');
+  }catch(err){
+    el.innerHTML = `<div class="text-dim" style="font-size:13px;">Couldn't load notices: ${escHtml(err.message)}</div>`;
+  }
+}
+async function deleteAdminNotice(id, btn){
+  // Two-step confirm: first click arms the button, second click (within 4s) deletes
+  if(btn.dataset.confirm !== '1'){
+    btn.dataset.confirm = '1';
+    btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Click again to delete';
+    btn.style.color = '#f87171';
+    setTimeout(()=>{ if(document.body.contains(btn)){ btn.dataset.confirm = '0'; btn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete'; btn.style.color = ''; } }, 4000);
+    return;
+  }
+  btn.disabled = true;
+  try{
+    const data = await apiFetch('/admin/notices/' + id, { method:'DELETE' });
+    toast(data.message, 'fa-trash');
+    loadAdminNotices();
+  }catch(err){
+    btn.disabled = false;
+    toast(err.message, 'fa-triangle-exclamation');
+  }
 }
 async function submitNotice(e){
   e.preventDefault();
   const payload = { title: val('notice-title'), body: val('notice-body'), category: val('notice-category'), targetDepartment: val('notice-dept') };
-  try{ const data = await apiFetch('/admin/notices', { method:'POST', body: JSON.stringify(payload) }); toast(data.message); e.target.reset(); }
+  try{ const data = await apiFetch('/admin/notices', { method:'POST', body: JSON.stringify(payload) }); toast(data.message); e.target.reset(); loadAdminNotices(); }
   catch(err){ toast(err.message, 'fa-triangle-exclamation'); }
   return false;
 }
