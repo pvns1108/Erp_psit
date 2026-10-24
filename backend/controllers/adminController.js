@@ -235,6 +235,16 @@ const postNotice = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, message: `Notice posted to ${students.length} student(s)`, notice });
 });
 
+// DELETE /api/admin/notices/:id — removes the notice and the notifications it sent to students
+const deleteNotice = asyncHandler(async (req, res) => {
+  const notice = await Notice.findByIdAndDelete(req.params.id);
+  if (!notice) { res.status(404); throw new Error('Notice not found (it may already be deleted)'); }
+  const { deletedCount } = await Notification.deleteMany({
+    type: 'notice', title: notice.title, createdAt: { $gte: new Date(notice.createdAt.getTime() - 60 * 1000) }
+  });
+  res.json({ success: true, message: `Notice "${notice.title}" deleted (${deletedCount} student notification(s) removed)` });
+});
+
 // POST /api/admin/assignments
 const postAssignment = asyncHandler(async (req, res) => {
   const assignment = await Assignment.create(req.body);
@@ -298,6 +308,6 @@ module.exports = {
   createStudent, listStudents, getStudent, updateStudent, deleteStudent,
   suspendStudent, resetStudentPassword, exportCredentials,
   bulkUploadResults, bulkUploadAttendance,
-  postNotice, postAssignment, postPlacement,
+  postNotice, deleteNotice, postAssignment, postPlacement,
   getLoginHistory, getStats
 };

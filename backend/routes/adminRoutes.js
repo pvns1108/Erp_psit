@@ -26,6 +26,7 @@ router.post('/students/bulk-results', uploadCsvMemory.single('file'), ctrl.bulkU
 router.post('/students/bulk-attendance', uploadCsvMemory.single('file'), ctrl.bulkUploadAttendance);
 
 router.post('/notices', [body('title').notEmpty()], validate, ctrl.postNotice);
+router.delete('/notices/:id', ctrl.deleteNotice);
 router.post('/assignments', [body('title').notEmpty()], validate, ctrl.postAssignment);
 router.post('/placements', [body('company').notEmpty()], validate, ctrl.postPlacement);
 
